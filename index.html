@@ -4,9 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nano Finance Cameroun</title>
+    
+    <!-- UI Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- FIREBASE SDKs (Compat v9) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         .gradient-bg { background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%); }
@@ -22,6 +30,9 @@
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col overflow-hidden selection:bg-blue-100">
+
+    <!-- RECAPTCHA CONTAINER (Invisible) -->
+    <div id="recaptcha-container"></div>
 
     <!-- TOAST -->
     <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-[100] hidden transition-all duration-300 w-11/12 max-w-sm">
@@ -47,18 +58,24 @@
                 <button onclick="switchAuthTab('register')" id="tab-register" class="flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all text-slate-500 hover:text-slate-700">Inscription</button>
             </div>
 
+            <!-- LOGIN FORM -->
             <form id="login-form" class="space-y-5 fade-in">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Numéro de téléphone</label>
-                    <input type="tel" id="login-phone" class="block w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium placeholder-slate-400" placeholder="Ex: 677 55 00 00" required>
+                    <div class="relative">
+                        <span class="absolute left-5 top-1/2 transform -translate-y-1/2 text-slate-400 font-bold">+237</span>
+                        <input type="tel" id="login-phone" class="block w-full pl-16 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium placeholder-slate-400" placeholder="6XX XX XX XX" required>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Mot de passe</label>
-                    <input type="password" id="login-pass" class="block w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium placeholder-slate-400" placeholder="••••••••" required>
+                <!-- OTP Field (Hidden initially) -->
+                <div id="login-otp-container" class="hidden">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Code SMS</label>
+                    <input type="text" id="login-otp" class="block w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium text-center tracking-widest" placeholder="123456">
                 </div>
-                <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white py-4.5 rounded-2xl font-bold text-lg shadow-lg shadow-blue-900/20 transition-all transform active:scale-[0.98] mt-2">Se connecter</button>
+                <button type="submit" id="login-btn" class="w-full bg-blue-900 hover:bg-blue-800 text-white py-4.5 rounded-2xl font-bold text-lg shadow-lg shadow-blue-900/20 transition-all transform active:scale-[0.98] mt-2">Recevoir le code</button>
             </form>
 
+            <!-- REGISTER FORM -->
             <form id="register-form" class="space-y-5 hidden fade-in">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Nom complet</label>
@@ -66,19 +83,31 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Numéro de téléphone</label>
-                    <input type="tel" id="reg-phone" class="block w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium placeholder-slate-400" placeholder="Ex: 677 55 00 00" required>
+                    <div class="relative">
+                        <span class="absolute left-5 top-1/2 transform -translate-y-1/2 text-slate-400 font-bold">+237</span>
+                        <input type="tel" id="reg-phone" class="block w-full pl-16 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium placeholder-slate-400" placeholder="6XX XX XX XX" required>
+                    </div>
                 </div>
+                <!-- Password Field (Stored in DB for profile management, not used for login) -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Mot de passe</label>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Mot de passe (Sécurité)</label>
                     <input type="password" id="reg-pass" class="block w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium placeholder-slate-400" placeholder="••••••••" required>
                 </div>
-                <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white py-4.5 rounded-2xl font-bold text-lg shadow-lg shadow-blue-900/20 transition-all transform active:scale-[0.98] mt-2">Créer un compte</button>
+                
+                <!-- OTP Field (Hidden initially) -->
+                <div id="reg-otp-container" class="hidden">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Code SMS</label>
+                    <input type="text" id="reg-otp" class="block w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium text-center tracking-widest" placeholder="123456">
+                </div>
+                
+                <button type="submit" id="reg-btn" class="w-full bg-blue-900 hover:bg-blue-800 text-white py-4.5 rounded-2xl font-bold text-lg shadow-lg shadow-blue-900/20 transition-all transform active:scale-[0.98] mt-2">Recevoir le code</button>
+                
                 <div class="flex items-start gap-3 mt-4 px-1">
                     <input type="checkbox" id="terms-check" class="mt-1 w-5 h-5 text-blue-900 rounded border-slate-300 focus:ring-blue-900 transition-all cursor-pointer" required>
                     <label for="terms-check" class="text-xs text-slate-500 leading-snug cursor-pointer">Je confirme avoir lu et accepté les <button type="button" onclick="openTermsModal()" class="text-blue-900 font-bold hover:underline">Termes et Conditions</button></label>
                 </div>
             </form>
-
+            
             <div class="mt-12 text-center pb-8">
                 <button onclick="hardReset()" class="text-[11px] text-slate-400 hover:text-red-500 transition-colors flex items-center justify-center gap-2 mx-auto">
                     <i class="fas fa-tools"></i> Problème technique ? Réinitialiser l'application
@@ -98,7 +127,7 @@
                     </div>
                     <div>
                         <p class="text-xs text-blue-200 font-medium uppercase tracking-wide">Bonjour,</p>
-                        <h2 id="user-name-display" class="font-bold text-xl leading-tight truncate max-w-[150px]">Utilisateur</h2>
+                        <h2 id="user-name-display" class="font-bold text-xl leading-tight truncate max-w-[150px]">...</h2>
                     </div>
                 </div>
                 <button onclick="logout()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all border border-white/10">
@@ -109,7 +138,7 @@
             <div class="text-center mb-2">
                 <p class="text-blue-200 text-xs font-semibold uppercase tracking-widest mb-2">Solde Total Disponible</p>
                 <div class="flex items-baseline justify-center gap-1">
-                    <h1 class="text-5xl font-extrabold tracking-tighter" id="balance-display">0,00</h1>
+                    <h1 class="text-5xl font-extrabold tracking-tighter" id="balance-display">--</h1>
                     <span class="text-xl font-bold text-blue-200">FCFA</span>
                 </div>
                 <div class="mt-4 inline-flex items-center gap-2 bg-white/10 px-4 py-1.5 rounded-full backdrop-blur-md border border-white/10 shadow-lg">
@@ -120,19 +149,16 @@
 
             <div class="absolute -bottom-8 left-6 right-6 flex justify-between gap-4">
                 <button onclick="openModal('deposit')" class="flex-1 bg-white text-blue-900 py-4 rounded-2xl shadow-xl shadow-slate-200 flex items-center justify-center gap-3 font-bold hover:bg-blue-50 transition-all transform hover:-translate-y-1">
-                    <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600"><i class="fas fa-arrow-down"></i></div>
-                    Dépôt
+                    <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600"><i class="fas fa-arrow-down"></i></div>Dépôt
                 </button>
                 <button onclick="openModal('withdraw')" class="flex-1 bg-white text-blue-900 py-4 rounded-2xl shadow-xl shadow-slate-200 flex items-center justify-center gap-3 font-bold hover:bg-blue-50 transition-all transform hover:-translate-y-1">
-                    <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-500"><i class="fas fa-arrow-up"></i></div>
-                    Retrait
+                    <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-500"><i class="fas fa-arrow-up"></i></div>Retrait
                 </button>
             </div>
         </header>
 
         <!-- Content -->
         <main class="flex-1 overflow-y-auto pt-16 pb-28 px-5 bg-slate-50 no-scrollbar">
-            
             <!-- HOME VIEW -->
             <div id="view-home" class="space-y-8 fade-in">
                 <section>
@@ -148,7 +174,6 @@
                         <button onclick="switchTab('invest')" class="bg-blue-900 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 hover:bg-blue-800 transition-all">Découvrir les packs</button>
                     </div>
                 </section>
-
                 <section>
                     <h3 class="font-bold text-slate-800 text-lg px-1 mb-4">Activités Récentes</h3>
                     <div id="recent-activity-list" class="space-y-3"></div>
@@ -161,10 +186,7 @@
                 <div class="px-1 mb-6">
                     <h2 class="text-2xl font-bold text-slate-900">Nos Packs</h2>
                     <div class="flex items-center gap-2 mt-1 text-sm text-slate-500"><i class="fas fa-check-circle text-green-500"></i><span>Rendement garanti 5.5% / jour</span></div>
-                    <div class="mt-4 bg-orange-50 border border-orange-100 rounded-xl p-3 flex items-start gap-3">
-                        <i class="fas fa-info-circle text-orange-500 mt-0.5"></i>
-                        <p class="text-xs text-orange-700 leading-relaxed">Pour maximiser vos gains, vous ne pouvez avoir qu'un seul pack actif à la fois. Désactivez le pack en cours pour en changer.</p>
-                    </div>
+                    <div class="mt-4 bg-orange-50 border border-orange-100 rounded-xl p-3 flex items-start gap-3"><i class="fas fa-info-circle text-orange-500 mt-0.5"></i><p class="text-xs text-orange-700 leading-relaxed">Pour maximiser vos gains, vous ne pouvez avoir qu'un seul pack actif à la fois.</p></div>
                 </div>
                 <div id="packs-container" class="grid grid-cols-1 gap-5"></div>
             </div>
@@ -185,7 +207,7 @@
                         <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center group-hover:bg-red-500 group-hover:text-white transition-colors"><i class="fas fa-sign-out-alt text-lg"></i></div><span class="font-semibold">Déconnexion</span>
                     </div>
                 </div>
-                <div class="mt-8 text-center space-y-1"><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Nano Finance</p><p class="text-[10px] text-slate-300">Version 3.5.0 • Build 2024</p></div>
+                <div class="mt-8 text-center space-y-1"><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Nano Finance</p><p class="text-[10px] text-slate-300">Version 3.7.0</p></div>
             </div>
 
             <!-- SUB VIEWS -->
@@ -228,10 +250,9 @@
         <div class="bg-white w-full max-w-lg rounded-3xl flex flex-col max-h-[85vh] shadow-2xl overflow-hidden animate-bounce-in">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50"><h3 class="text-lg font-bold text-slate-800">Termes & Conditions</h3><button onclick="closeTermsModal()" class="text-slate-400 hover:text-slate-600 transition-colors"><i class="fas fa-times text-xl"></i></button></div>
             <div class="p-6 overflow-y-auto text-sm text-slate-600 space-y-4 leading-relaxed">
-                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100"><h4 class="font-bold text-blue-900 mb-1"><i class="fas fa-gift mr-2"></i>Bonus de Bienvenue</h4><p>Un bonus unique de <strong>1000 FCFA</strong> est crédité automatiquement sur votre solde après l'achat de votre tout premier pack.</p></div>
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100"><h4 class="font-bold text-blue-900 mb-1"><i class="fas fa-gift mr-2"></i>Bonus de Bienvenue</h4><p>Un bonus unique de <strong>1000 FCFA</strong> est crédité automatiquement sur votre solde après l'achat de votre tout premier pack payant.</p></div>
                 <div class="bg-slate-100 p-4 rounded-xl"><h4 class="font-bold text-slate-900 mb-1"><i class="fas fa-star mr-2"></i>Pack Gratuit</h4><p>Le pack "Essai Gratuit" ne peut être activé qu'une seule fois par compte. Il génère 500 FCFA sur 30 jours.</p></div>
-                <div><h4 class="font-bold text-slate-900 mb-1">Règles des Packs</h4><p>Un seul pack actif à la fois. Durée : 30 jours.</p></div>
-                <div><h4 class="font-bold text-slate-900 mb-1">Limites de Transaction</h4><ul class="list-disc pl-5 space-y-1 mt-1"><li>Dépôt minimum : <strong>5000 FCFA</strong></li><li>Retrait minimum : <strong>1000 FCFA</strong></li></ul></div>
+                <div><h4 class="font-bold text-slate-900 mb-1">Limites</h4><ul class="list-disc pl-5 space-y-1 mt-1"><li>Dépôt minimum : <strong>5000 FCFA</strong></li><li>Retrait minimum : <strong>1000 FCFA</strong></li></ul></div>
             </div>
             <div class="p-5 border-t border-slate-100 bg-slate-50"><button onclick="closeTermsModal()" class="w-full bg-blue-900 text-white py-3.5 rounded-xl font-bold shadow hover:bg-blue-800 transition-colors">J'ai compris</button></div>
         </div>
@@ -267,6 +288,25 @@
     </div>
 
     <script>
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyCfiExPZwsF53-Ix3cCeIa3tq1MJ5359RU",
+          authDomain: "nanofinance-9192a.firebaseapp.com",
+          projectId: "nanofinance-9192a",
+          storageBucket: "nanofinance-9192a.firebasestorage.app",
+          messagingSenderId: "376434082116",
+          appId: "1:376434082116:web:838ef702670608bc959711",
+          measurementId: "G-9455DCWCNL"
+        };
+
+        let db, auth, confirmationResult, recaptchaVerifier;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            auth = firebase.auth();
+            auth.languageCode = 'fr';
+        } catch (e) { console.error("Firebase init error:", e); }
+
         // --- DATA ---
         const PACKS = [
             {p:0,n:"Essai Gratuit",c:"slate",i:"fa-gift", isFree:true}, 
@@ -284,35 +324,67 @@
         
         let currentUser=null, currentModalType='deposit', pendingAmount=0, earningsInterval=null;
 
-        function checkAuth() {
-            const stored = localStorage.getItem('nanoUser');
-            if(stored) {
-                try {
-                    const u = JSON.parse(stored);
-                    if(!u.transactions) u.transactions=[]; if(!u.activePacks) u.activePacks=[];
-                    if(!u.lastBalanceUpdate) u.lastBalanceUpdate = Date.now();
-                    if(typeof u.hasReceivedBonus === 'undefined') u.hasReceivedBonus = false;
-                    if(typeof u.hasUsedFreePack === 'undefined') u.hasUsedFreePack = false; 
-                    if(typeof u.depositCount === 'undefined') u.depositCount = 0;
-                    if(typeof u.withdrawCount === 'undefined') u.withdrawCount = 0;
-                    if(typeof u.balance !== 'number') u.balance = 0;
-                    localStorage.setItem('nanoUser', JSON.stringify(u)); 
-                    if (localStorage.getItem('nanoSession') === 'true') { currentUser = u; showApp(); } 
-                    else { showAuth(); switchAuthTab('login'); if(u.phone) document.getElementById('login-phone').value=u.phone; }
-                } catch(e) { hardReset(); }
-            } else { showAuth(); switchAuthTab('register'); }
+        // --- AUTH & CORE ---
+        function initAuth() {
+            auth.onAuthStateChanged(user => {
+                if (user) loadUserData(user.uid);
+                else { showAuth(); setupRecaptcha(); }
+            });
         }
 
+        function setupRecaptcha() {
+            if(!recaptchaVerifier) recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {'size': 'invisible'});
+        }
+
+        function authWithPhone(pId, bId, otpCId, otpId, isReg) {
+            const pVal = document.getElementById(pId).value.replace(/\s/g, '');
+            const btn = document.getElementById(bId);
+            const otpCont = document.getElementById(otpCId);
+            if (!pVal) return showToast("Numéro requis", true);
+            const num = "+237" + pVal;
+
+            if (otpCont.classList.contains('hidden')) {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi...'; btn.disabled = true;
+                auth.signInWithPhoneNumber(num, recaptchaVerifier).then((res) => {
+                    confirmationResult = res; otpCont.classList.remove('hidden'); btn.innerHTML = 'Valider le code'; btn.disabled = false; showToast("Code envoyé");
+                }).catch((e) => {
+                    console.error(e); btn.innerHTML = 'Réessayer'; btn.disabled = false; showToast("Erreur envoi SMS", true);
+                    recaptchaVerifier.render().then(wId => grecaptcha.reset(wId));
+                });
+            } else {
+                const code = document.getElementById(otpId).value;
+                if (!code) return showToast("Code requis", true);
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Vérification...';
+                confirmationResult.confirm(code).then((res) => {
+                    const user = res.user;
+                    if(isReg) {
+                        const name = document.getElementById('reg-name').value || "Utilisateur";
+                        const pass = document.getElementById('reg-pass').value || "1234";
+                        db.collection('users').doc(user.uid).set({
+                            name: name, phone: num, password: pass, balance: 0,
+                            activePacks: [], transactions: [], joinDate: new Date().toISOString(),
+                            lastBalanceUpdate: Date.now(), hasReceivedBonus: false, hasUsedFreePack: false,
+                            depositCount: 0, withdrawCount: 0
+                        }).then(() => showToast("Compte créé !"));
+                    }
+                }).catch((e) => { btn.innerHTML = 'Valider le code'; showToast("Code incorrect", true); });
+            }
+        }
+
+        function loadUserData(uid) {
+            db.collection('users').doc(uid).onSnapshot(doc => {
+                if (doc.exists) { currentUser = doc.data(); if(typeof currentUser.hasUsedFreePack === 'undefined') currentUser.hasUsedFreePack = false; showApp(); } 
+                else { showToast("Profil introuvable", true); logout(); }
+            });
+        }
+
+        function logout() { auth.signOut().then(() => { currentUser=null; showAuth(); switchAuthTab('login'); }); }
+        
         function showAuth() { document.getElementById('auth-screen').classList.remove('hidden'); document.getElementById('app-screen').classList.add('hidden'); }
-        function hardReset() { localStorage.clear(); currentUser = null; showAuth(); switchAuthTab('register'); showToast("Application réinitialisée"); }
         function showApp() { document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('app-screen').classList.remove('hidden'); processPendingEarnings(); startEarningsLoop(); switchTab('home'); updateUI(); }
+        function hardReset() { auth.signOut(); showAuth(); }
 
         function switchAuthTab(t) { 
-            if(t === 'register' && localStorage.getItem('nanoUser')) {
-                showToast("Un seul compte autorisé. Connectez-vous.", true);
-                switchAuthTab('login');
-                return;
-            }
             document.getElementById('login-form').classList.toggle('hidden',t!=='login'); 
             document.getElementById('register-form').classList.toggle('hidden',t!=='register');
             document.getElementById('tab-login').className = t==='login' ? "flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all shadow-sm text-blue-900 bg-white" : "flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all text-slate-500 hover:text-slate-700";
@@ -324,119 +396,18 @@
             document.getElementById('user-name-display').innerText = currentUser.name;
             document.getElementById('balance-display').innerText = currentUser.balance.toLocaleString('fr-FR', {minimumFractionDigits:2});
             let d = 0; if(currentUser.activePacks) currentUser.activePacks.forEach(p => d += p.dailyReturn);
-            document.getElementById('daily-income-display').innerText = d.toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('daily-income-display').innerText = d.toLocaleString('fr-FR', {minimumFractionDigits: 2});
             renderPacks(); renderActivePacks(); renderHistoryUI();
         }
 
-        function renderPacks() {
-            const c = document.getElementById('packs-container'); c.innerHTML = '';
-            PACKS.forEach(p => {
-                let daily, total, roi, priceDisplay, btnText;
-                
-                if (p.isFree) {
-                    daily = FREE_PACK_DAILY;
-                    total = 500;
-                    roi = 100;
-                    priceDisplay = "GRATUIT";
-                    btnText = "Essayer";
-                } else {
-                    daily = Math.floor(p.p * 0.055);
-                    total = daily * 30;
-                    roi = Math.round(((total - p.p) / p.p) * 100);
-                    priceDisplay = p.p.toLocaleString() + " <span class='text-sm text-slate-500 font-bold'>FCFA</span>";
-                    btnText = "Activer ce Pack";
-                }
-
-                const popBadge = p.pop ? `<div class="absolute top-0 right-0 bg-yellow-400 text-blue-900 text-[10px] font-bold px-3 py-1 rounded-bl-xl z-20">POPULAIRE</div>` : '';
-                
-                c.innerHTML += `
-                <div class="relative overflow-hidden rounded-3xl bg-white p-6 shadow-xl shadow-slate-100 transition-all hover:scale-[1.02] border-l-4 border-${p.c}-500 group">
-                    ${popBadge}
-                    <div class="absolute top-0 right-0 -mr-8 -mt-8 h-32 w-32 rounded-full bg-${p.c}-50 opacity-50 blur-2xl group-hover:bg-${p.c}-100 transition-all"></div>
-                    <div class="flex items-center justify-between mb-5 relative z-10">
-                        <div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-${p.c}-50 text-${p.c}-600 flex items-center justify-center text-xl shadow-sm"><i class="fas ${p.i}"></i></div><div><h3 class="text-base font-bold text-slate-800 uppercase tracking-wider">${p.n}</h3><span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">30 Jours</span></div></div>
-                    </div>
-                    <div class="mb-6 relative z-10">
-                        <div class="flex items-baseline gap-1"><span class="text-3xl font-extrabold text-slate-900 tracking-tight">${priceDisplay}</span></div>
-                        <div class="h-1 w-full bg-slate-100 rounded-full mt-3 overflow-hidden"><div class="h-full bg-${p.c}-500 w-[${roi}%] max-w-full"></div></div>
-                    </div>
-                    <div class="space-y-3 mb-6 relative z-10 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                        <div class="flex justify-between items-center text-sm"><span class="text-slate-500 font-medium">Gain Journalier</span><span class="font-bold text-${p.c}-600">+${daily.toLocaleString(undefined, {maximumFractionDigits: 2})}</span></div>
-                        <div class="flex justify-between items-center text-sm border-t border-slate-200/50 pt-2 mt-2"><span class="text-slate-500 font-medium">Total Revenu</span><span class="font-bold text-slate-900">${total.toLocaleString()} FCFA</span></div>
-                    </div>
-                    <button onclick="buyPack(${p.p}, '${p.n}', ${daily})" class="w-full py-4 rounded-2xl text-white font-bold shadow-lg shadow-${p.c}-500/20 bg-${p.c}-600 hover:bg-${p.c}-700 active:scale-[0.98] transition-all relative z-10">${btnText}</button>
-                </div>`;
-            });
-        }
-
-        function renderActivePacks() {
-            const list = document.getElementById('active-packs-list');
-            const empty = document.getElementById('empty-packs');
-            if(!currentUser.activePacks || currentUser.activePacks.length === 0) { empty.classList.remove('hidden'); list.innerHTML=''; }
-            else {
-                empty.classList.add('hidden');
-                list.innerHTML = currentUser.activePacks.map((p, i) => `
-                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-lg shadow-slate-100/50 flex justify-between items-center relative overflow-hidden">
-                    <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-green-500"></div>
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-inner"><i class="fas fa-cube text-xl"></i></div>
-                        <div><p class="font-bold text-slate-900 text-lg">${p.name}</p><p class="text-xs font-semibold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-lg inline-block mt-1">${p.price === 0 ? 'GRATUIT' : parseInt(p.price).toLocaleString() + ' FCFA'}</p></div>
-                    </div>
-                    <div class="flex flex-col items-end gap-2">
-                        <div class="text-right"><span class="block text-[10px] text-slate-400 font-bold uppercase">Gain</span><p class="font-bold text-green-500 text-lg">+${p.dailyReturn.toLocaleString(undefined, {maximumFractionDigits: 2})}</p></div>
-                        <button onclick="deactivatePack(${i})" class="text-[10px] bg-red-50 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-100 transition-colors border border-red-100">Arrêter</button>
-                    </div>
-                </div>`).join('');
-            }
-        }
-
-        function renderHistoryUI() {
-            const recent = document.getElementById('recent-activity-list');
-            const full = document.getElementById('history-list');
-            const emptyR = document.getElementById('empty-activity');
-            const emptyF = document.getElementById('history-empty');
-            
-            recent.innerHTML = ''; full.innerHTML = '';
-            const txs = currentUser.transactions || [];
-            
-            if(txs.length === 0) { emptyR.classList.remove('hidden'); emptyF.classList.remove('hidden'); return; }
-            emptyR.classList.add('hidden'); emptyF.classList.add('hidden');
-
-            const sorted = [...txs].reverse();
-            sorted.forEach((t, i) => {
-                let col='gray', ic='fa-circle', lbl='Op', s='';
-                if(t.type==='deposit'){col='green';ic='fa-arrow-down';lbl='Dépôt';s='+';}
-                else if(t.type==='withdraw'){col='red';ic='fa-arrow-up rotate-45';lbl='Retrait';s='-';}
-                else if(t.type==='pack_buy'){col='blue';ic='fa-cube';lbl='Achat Pack';s='-';}
-                else if(t.type==='bonus'){col='yellow';ic='fa-gift';lbl='Bonus';s='+';}
-                
-                const html = `
-                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center transition-transform hover:scale-[1.01]">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full bg-${col}-50 flex items-center justify-center text-${col}-600"><i class="fas ${ic}"></i></div>
-                        <div><p class="font-bold text-slate-800 text-sm">${lbl}</p><p class="text-[10px] font-bold text-slate-400 uppercase mt-0.5">${new Date(t.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</p></div>
-                    </div>
-                    <div class="font-bold text-${col}-600 bg-${col}-50 px-3 py-1 rounded-lg text-sm">${s}${t.amount.toLocaleString()} F</div>
-                </div>`;
-                if(i<3) recent.innerHTML += html;
-                full.innerHTML += html;
-            });
-        }
+        function saveUser() { if(auth.currentUser) db.collection('users').doc(auth.currentUser.uid).set(currentUser); }
 
         function buyPack(price, name, daily) {
-            // General Constraint: 1 Pack
             if(currentUser.activePacks.length >= 1) return showToast("1 seul pack autorisé !", true);
-            
-            // Special Constraint: Free Pack
             if (price === 0) {
-                if (currentUser.hasUsedFreePack) {
-                    showToast("Essai gratuit déjà utilisé !", true);
-                    return;
-                }
-                // Mark as used
+                if (currentUser.hasUsedFreePack) return showToast("Essai gratuit déjà utilisé !", true);
                 currentUser.hasUsedFreePack = true;
             }
-
             if(currentUser.balance < price) { showToast("Solde insuffisant"); return openModal('deposit'); }
             
             currentUser.balance -= price;
@@ -444,8 +415,7 @@
             currentUser.transactions.push({ type:'pack_buy', amount:price, date: new Date().toISOString() });
             
             let msg = "";
-            // --- BONUS LOGIC ---
-            // CHANGE: Added condition "&& price > 0" so free pack doesn't trigger it
+            // Bonus ONLY if PAID pack
             if(!currentUser.hasReceivedBonus && price > 0) {
                 currentUser.balance += WELCOME_BONUS;
                 currentUser.hasReceivedBonus = true;
@@ -457,90 +427,34 @@
             saveUser(); showToast(`Pack activé${msg}`); switchTab('home');
         }
 
-        function deactivatePack(i) {
-            processPendingEarnings();
-            currentUser.activePacks.splice(i, 1);
-            saveUser(); showToast("Pack arrêté");
-        }
+        function deactivatePack(i) { processPendingEarnings(); currentUser.activePacks.splice(i, 1); saveUser(); showToast("Pack arrêté"); }
 
         function processTransaction() {
             const amt = parseInt(document.getElementById('trans-amount').value);
-            const isDep = currentModalType === 'deposit';
-            const min = isDep ? MIN_DEPOSIT : MIN_WITHDRAW;
-            
-            if(!amt || amt < min) return showToast(`Minimum ${min} FCFA`, true);
-            if(!isDep && currentUser.balance < amt) return showToast("Solde insuffisant", true);
-
-            closeModal();
-            setTimeout(() => openVerificationModal(currentModalType, amt), 300);
-        }
-
-        function openVerificationModal(type, amount) {
-            currentModalType = type;
-            pendingAmount = amount;
-            document.getElementById('verif-amount').innerText = amount.toLocaleString();
-            document.getElementById('verif-code-input').value = '';
-            
-            const title = document.getElementById('verif-title');
-            const lbl = document.getElementById('verif-counter-label');
-            const dsp = document.getElementById('verif-counter-display');
-            const closeBtn = document.getElementById('modal-close-btn');
-            
-            let cnt = type === 'deposit' ? (currentUser.depositCount || 0) : (currentUser.withdrawCount || 0);
-            
-            if (type === 'deposit') {
-                title.innerText = "Validation Dépôt";
-                lbl.innerText = "Dépôts effectués";
-                closeBtn.classList.remove('hidden');
-            } else {
-                title.innerText = "Validation Retrait";
-                lbl.innerText = "Retraits effectués";
-                closeBtn.classList.add('hidden'); 
-            }
-            dsp.innerText = cnt;
-            
-            const waLink = `https://wa.me/237672943135?text=Bonjour,%20mon%20compteur%20de%20${type==='deposit'?'dépôt':'retrait'}%20est%20à%20${cnt}.%20Je%20veux%20valider%20mon%20${type==='deposit'?'dépôt':'retrait'}%20de%20${amount}%20FCFA.`;
-            document.getElementById('whatsapp-link').href = waLink;
-            document.getElementById('verification-modal').classList.remove('hidden');
-        }
-
-        function closeVerificationModal() {
-            if(currentModalType === 'withdraw') return; 
-            document.getElementById('verification-modal').classList.add('hidden');
+            const min = currentModalType === 'deposit' ? MIN_DEPOSIT : MIN_WITHDRAW;
+            if(!amt || amt < min) return showToast(`Min ${min} FCFA`, true);
+            if(currentModalType !== 'deposit' && currentUser.balance < amt) return showToast("Solde insuffisant", true);
+            closeModal(); setTimeout(() => openVerificationModal(currentModalType, amt), 300);
         }
 
         function verifyTransaction() {
             const input = document.getElementById('verif-code-input').value.trim().toUpperCase();
-            
-            let cnt = 0;
-            let codesList = [];
-
-            if (currentModalType === 'deposit') {
-                cnt = currentUser.depositCount || 0;
-                codesList = DEPOSIT_CODES;
-            } else {
-                cnt = currentUser.withdrawCount || 0;
-                codesList = WITHDRAW_CODES;
-            }
-
-            const safeIndex = cnt % codesList.length;
-            const valid = codesList[safeIndex];
+            const isDep = currentModalType === 'deposit';
+            const cnt = isDep ? (currentUser.depositCount || 0) : (currentUser.withdrawCount || 0);
+            const codes = isDep ? DEPOSIT_CODES : WITHDRAW_CODES;
+            const valid = codes[cnt % codes.length];
 
             if(input === valid) {
-                if(currentModalType === 'deposit') {
-                    currentUser.balance += pendingAmount;
-                    currentUser.depositCount = cnt + 1;
+                if(isDep) {
+                    currentUser.balance += pendingAmount; currentUser.depositCount = cnt + 1;
                     currentUser.transactions.push({type:'deposit', amount:pendingAmount, date:new Date().toISOString()});
                     showToast("Dépôt Validé !");
                 } else {
-                    if(currentUser.balance < pendingAmount) return showToast("Erreur Solde", true);
-                    currentUser.balance -= pendingAmount;
-                    currentUser.withdrawCount = cnt + 1;
+                    currentUser.balance -= pendingAmount; currentUser.withdrawCount = cnt + 1;
                     currentUser.transactions.push({type:'withdraw', amount:pendingAmount, date:new Date().toISOString()});
                     showToast("Retrait Validé !");
                 }
-                saveUser();
-                document.getElementById('verification-modal').classList.add('hidden');
+                saveUser(); document.getElementById('verification-modal').classList.add('hidden');
             } else {
                 showToast("Code Incorrect", true);
                 document.getElementById('verif-code-input').classList.add('border-red-500');
@@ -550,74 +464,70 @@
 
         function processPendingEarnings() {
             if(!currentUser || !currentUser.activePacks.length) { if(currentUser) {currentUser.lastBalanceUpdate=Date.now(); saveUser();} return; }
-            const now = Date.now();
-            const diff = (now - (currentUser.lastBalanceUpdate||now)) / 1000;
+            const now = Date.now(); const diff = (now - (currentUser.lastBalanceUpdate||now)) / 1000;
             if(diff<=0) return;
             let earn=0, kept=[];
             currentUser.activePacks.forEach(p => {
                 const end = new Date(p.date).getTime() + (30*86400000);
                 if(now < end) { 
                     const daily = p.price === 0 ? FREE_PACK_DAILY : (p.dailyReturn);
-                    earn += (daily/86400)*diff; 
-                    kept.push(p); 
+                    earn += (daily/86400)*diff; kept.push(p); 
                 }
             });
             if(kept.length !== currentUser.activePacks.length) currentUser.activePacks = kept;
             if(earn>0) currentUser.balance += earn;
-            currentUser.lastBalanceUpdate = now;
-            saveUser();
+            currentUser.lastBalanceUpdate = now; saveUser();
         }
         function startEarningsLoop() { if(earningsInterval) clearInterval(earningsInterval); earningsInterval=setInterval(()=>{if(currentUser)processPendingEarnings();},5000); }
 
-        function saveUser() { localStorage.setItem('nanoUser', JSON.stringify(currentUser)); updateUI(); }
-        function logout() { localStorage.removeItem('nanoSession'); currentUser=null; showAuth(); switchAuthTab('login'); }
-        
-        function switchTab(t) {
-            if(t==='wallet'){openModal('deposit');switchTab('home');return;}
-            document.querySelectorAll('.bottom-nav-item').forEach(e=>e.classList.remove('active','text-blue-800'));
-            document.querySelector(`[data-target="${t}"]`)?.classList.add('active','text-blue-800');
-            ['home','invest','profile','account-details','history'].forEach(v=>document.getElementById(`view-${v}`).classList.add('hidden'));
-            document.getElementById(`view-${t}`).classList.remove('hidden');
+        // --- RENDERERS ---
+        function renderPacks() {
+            const c = document.getElementById('packs-container'); c.innerHTML = '';
+            PACKS.forEach(p => {
+                let daily, total, roi, priceDisplay, btnText;
+                if (p.isFree) { daily=FREE_PACK_DAILY; total=500; roi=100; priceDisplay="GRATUIT"; btnText="Essayer"; }
+                else { daily=Math.floor(p.p*0.055); total=daily*30; roi=Math.round(((total-p.p)/p.p)*100); priceDisplay=p.p.toLocaleString()+" <span class='text-sm text-slate-500 font-bold'>FCFA</span>"; btnText="Activer ce Pack"; }
+                const popBadge = p.pop ? `<div class="absolute top-0 right-0 bg-yellow-400 text-blue-900 text-[10px] font-bold px-3 py-1 rounded-bl-xl z-20">POPULAIRE</div>` : '';
+                c.innerHTML += `<div class="relative overflow-hidden rounded-3xl bg-white p-6 shadow-xl shadow-slate-100 transition-all hover:scale-[1.02] border-l-4 border-${p.c}-500 group">${popBadge}<div class="absolute top-0 right-0 -mr-8 -mt-8 h-32 w-32 rounded-full bg-${p.c}-50 opacity-50 blur-2xl group-hover:bg-${p.c}-100 transition-all"></div><div class="flex items-center justify-between mb-5 relative z-10"><div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-${p.c}-50 text-${p.c}-600 flex items-center justify-center text-xl shadow-sm"><i class="fas ${p.i}"></i></div><div><h3 class="text-base font-bold text-slate-800 uppercase tracking-wider">${p.n}</h3><span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">30 Jours</span></div></div></div><div class="mb-6 relative z-10"><div class="flex items-baseline gap-1"><span class="text-3xl font-extrabold text-slate-900 tracking-tight">${priceDisplay}</span></div><div class="h-1 w-full bg-slate-100 rounded-full mt-3 overflow-hidden"><div class="h-full bg-${p.c}-500 w-[${roi}%] max-w-full"></div></div></div><div class="space-y-3 mb-6 relative z-10 bg-slate-50/50 p-4 rounded-2xl border border-slate-100"><div class="flex justify-between items-center text-sm"><span class="text-slate-500 font-medium">Gain Journalier</span><span class="font-bold text-${p.c}-600">+${daily.toLocaleString(undefined,{maximumFractionDigits:2})}</span></div><div class="flex justify-between items-center text-sm border-t border-slate-200/50 pt-2 mt-2"><span class="text-slate-500 font-medium">Total Revenu</span><span class="font-bold text-slate-900">${total.toLocaleString()} FCFA</span></div></div><button onclick="buyPack(${p.p}, '${p.n}', ${daily})" class="w-full py-4 rounded-2xl text-white font-bold shadow-lg shadow-${p.c}-500/20 bg-${p.c}-600 hover:bg-${p.c}-700 active:scale-[0.98] transition-all relative z-10">${btnText}</button></div>`;
+            });
         }
-        function openModal(t) { 
-            currentModalType=t; document.getElementById('transaction-modal').classList.remove('hidden'); setTimeout(()=>document.getElementById('modal-content').classList.remove('translate-y-full'),10);
-            const tit = document.getElementById('modal-title'); const btn = document.getElementById('trans-btn');
-            if(t==='deposit'){ tit.innerText="Dépôt"; btn.classList.replace('bg-red-600','bg-blue-900'); } 
-            else { tit.innerText="Retrait"; btn.classList.replace('bg-blue-900','bg-red-600'); }
+        function renderActivePacks() {
+            const l=document.getElementById('active-packs-list'), e=document.getElementById('empty-packs');
+            if(!currentUser.activePacks.length) { e.classList.remove('hidden'); l.innerHTML=''; }
+            else { e.classList.add('hidden'); l.innerHTML=currentUser.activePacks.map((p,i)=>`<div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-lg shadow-slate-100/50 flex justify-between items-center relative overflow-hidden"><div class="absolute left-0 top-0 bottom-0 w-1.5 bg-green-500"></div><div class="flex items-center gap-4"><div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-inner"><i class="fas fa-cube text-xl"></i></div><div><p class="font-bold text-slate-900 text-lg">${p.name}</p><p class="text-xs font-semibold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-lg inline-block mt-1">${p.price===0?'GRATUIT':parseInt(p.price).toLocaleString()+' FCFA'}</p></div></div><div class="flex flex-col items-end gap-2"><div class="text-right"><span class="block text-[10px] text-slate-400 font-bold uppercase">Gain</span><p class="font-bold text-green-500 text-lg">+${p.dailyReturn.toLocaleString(undefined,{maximumFractionDigits:2})}</p></div><button onclick="deactivatePack(${i})" class="text-[10px] bg-red-50 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-100 transition-colors border border-red-100">Arrêter</button></div></div>`).join(''); }
         }
+        function renderHistoryUI() {
+            const r=document.getElementById('recent-activity-list'), f=document.getElementById('history-list'), er=document.getElementById('empty-activity'), ef=document.getElementById('history-empty');
+            r.innerHTML=''; f.innerHTML=''; const txs=currentUser.transactions||[];
+            if(!txs.length) { er.classList.remove('hidden'); ef.classList.remove('hidden'); return; }
+            er.classList.add('hidden'); ef.classList.add('hidden');
+            [...txs].reverse().forEach((t,i)=>{
+                let c='gray',ic='fa-circle',l='Op',s='';
+                if(t.type==='deposit'){c='green';ic='fa-arrow-down';l='Dépôt';s='+';} else if(t.type==='withdraw'){c='red';ic='fa-arrow-up rotate-45';l='Retrait';s='-';} else if(t.type==='pack_buy'){c='blue';ic='fa-cube';l='Achat Pack';s='-';} else if(t.type==='bonus'){c='yellow';ic='fa-gift';l='Bonus';s='+';}
+                const h=`<div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center transition-transform hover:scale-[1.01]"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-full bg-${c}-50 flex items-center justify-center text-${c}-600"><i class="fas ${ic}"></i></div><div><p class="font-bold text-slate-800 text-sm">${l}</p><p class="text-[10px] font-bold text-slate-400 uppercase mt-0.5">${new Date(t.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</p></div></div><div class="font-bold text-${c}-600 bg-${c}-50 px-3 py-1 rounded-lg text-sm">${s}${t.amount.toLocaleString()} F</div></div>`;
+                if(i<3)r.innerHTML+=h; f.innerHTML+=h;
+            });
+        }
+
+        // --- UTILS ---
+        function openModal(t) { currentModalType=t; document.getElementById('transaction-modal').classList.remove('hidden'); setTimeout(()=>document.getElementById('modal-content').classList.remove('translate-y-full'),10); const tit=document.getElementById('modal-title'), btn=document.getElementById('trans-btn'); if(t==='deposit'){tit.innerText="Dépôt"; btn.className="w-full py-4.5 rounded-2xl font-bold text-white text-lg bg-blue-900 shadow-xl shadow-blue-900/20 hover:bg-blue-800 transition-all active:scale-[0.98]";} else {tit.innerText="Retrait"; btn.className="w-full py-4.5 rounded-2xl font-bold text-white text-lg bg-red-600 shadow-xl shadow-red-600/20 hover:bg-red-500 transition-all active:scale-[0.98]";} }
         function closeModal() { document.getElementById('modal-content').classList.add('translate-y-full'); setTimeout(()=>document.getElementById('transaction-modal').classList.add('hidden'),300); document.getElementById('trans-amount').value=''; }
+        function openVerificationModal(type, amount) { currentModalType = type; pendingAmount = amount; document.getElementById('verif-amount').innerText = amount.toLocaleString(); document.getElementById('verif-code-input').value = ''; const title = document.getElementById('verif-title'), lbl = document.getElementById('verif-counter-label'), dsp = document.getElementById('verif-counter-display'), closeBtn = document.getElementById('modal-close-btn'); let cnt = type === 'deposit' ? (currentUser.depositCount || 0) : (currentUser.withdrawCount || 0); if (type === 'deposit') { title.innerText = "Validation Dépôt"; lbl.innerText = "Dépôts effectués"; closeBtn.classList.remove('hidden'); } else { title.innerText = "Validation Retrait"; lbl.innerText = "Retraits effectués"; closeBtn.classList.add('hidden'); } dsp.innerText = cnt; const waLink = `https://wa.me/237672943135?text=Bonjour,%20mon%20compteur%20de%20${type==='deposit'?'dépôt':'retrait'}%20est%20à%20${cnt}.%20Je%20veux%20valider%20mon%20${type==='deposit'?'dépôt':'retrait'}%20de%20${amount}%20FCFA.`; document.getElementById('whatsapp-link').href = waLink; document.getElementById('verification-modal').classList.remove('hidden'); }
+        function closeVerificationModal() { if(currentModalType === 'withdraw') return; document.getElementById('verification-modal').classList.add('hidden'); }
+        function switchTab(t) { if(t==='wallet'){openModal('deposit');switchTab('home');return;} document.querySelectorAll('.bottom-nav-item').forEach(e=>e.classList.remove('active','text-blue-800')); document.querySelector(`[data-target="${t}"]`)?.classList.add('active','text-blue-800'); ['home','invest','profile','account-details','history'].forEach(v=>document.getElementById(`view-${v}`).classList.add('hidden')); document.getElementById(`view-${t}`).classList.remove('hidden'); }
+        function showAccountDetails() { switchTab('account-details'); document.getElementById('acc-name').value=currentUser.name; document.getElementById('acc-phone').value=currentUser.phone; }
+        function updatePassword() { const oldP = document.getElementById('acc-old-pass').value; const newP = document.getElementById('acc-new-pass').value; if(oldP !== currentUser.password) return showToast("Ancien mot de passe incorrect", true); if(newP.length < 4) return showToast("Nouveau trop court (min 4)", true); currentUser.password = newP; saveUser(); showToast("Mot de passe modifié !"); document.getElementById('acc-old-pass').value = ''; document.getElementById('acc-new-pass').value = ''; backToProfile(); }
+        function showHistory() { switchTab('history'); }
+        function backToProfile() { switchTab('profile'); }
         function showToast(m,err=false) { const t=document.getElementById('toast'); document.getElementById('toast-message').innerText=m; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),3000); }
         function openTermsModal() { document.getElementById('terms-modal').classList.remove('hidden'); }
         function closeTermsModal() { document.getElementById('terms-modal').classList.add('hidden'); }
-        function showAccountDetails() { switchTab('account-details'); document.getElementById('acc-name').value=currentUser.name; document.getElementById('acc-phone').value=currentUser.phone; }
-        
-        function updatePassword() { 
-            const oldP = document.getElementById('acc-old-pass').value;
-            const newP = document.getElementById('acc-new-pass').value;
-            if(oldP !== currentUser.password) return showToast("Ancien mot de passe incorrect", true);
-            if(newP.length < 4) return showToast("Nouveau trop court (min 4)", true); 
-            currentUser.password = newP; saveUser(); showToast("Mot de passe modifié !"); 
-            document.getElementById('acc-old-pass').value = ''; document.getElementById('acc-new-pass').value = '';
-            backToProfile(); 
-        }
-        
-        function showHistory() { switchTab('history'); }
-        function backToProfile() { switchTab('profile'); }
 
-        document.getElementById('register-form').addEventListener('submit', (e)=>{ 
-            e.preventDefault(); 
-            // FINAL SECURITY CHECK BEFORE CREATION
-            if(localStorage.getItem('nanoUser')) {
-                showToast("Un compte existe déjà !", true);
-                switchAuthTab('login');
-                return;
-            }
-            currentUser={name:document.getElementById('reg-name').value, phone:document.getElementById('reg-phone').value, password:document.getElementById('reg-pass').value, balance:0, activePacks:[], transactions:[], joinDate:new Date().toISOString(), lastBalanceUpdate:Date.now(), hasReceivedBonus:false, depositCount:0, withdrawCount:0, hasUsedFreePack:false}; 
-            saveUser(); showToast("Compte créé"); switchAuthTab('login'); document.getElementById('login-phone').value=currentUser.phone; 
-        });
-        document.getElementById('login-form').addEventListener('submit', (e)=>{ e.preventDefault(); const stored=localStorage.getItem('nanoUser'); if(!stored)return showToast("Inconnu",true); try { const u=JSON.parse(stored); if(u.phone===document.getElementById('login-phone').value && u.password===document.getElementById('login-pass').value){ if(typeof u.withdrawCount==='undefined') u.withdrawCount=0; currentUser=u; localStorage.setItem('nanoSession','true'); showApp(); } else { showToast("Erreur ID",true); } } catch(e){ hardReset(); } });
+        // LISTENERS
+        document.getElementById('login-form').addEventListener('submit', (e) => { e.preventDefault(); authWithPhone('login-phone', 'login-btn', 'login-otp-container', 'login-otp', false); });
+        document.getElementById('register-form').addEventListener('submit', (e) => { e.preventDefault(); authWithPhone('reg-phone', 'reg-btn', 'reg-otp-container', 'reg-otp', true); });
 
-        checkAuth();
+        initAuth();
     </script>
 </body>
 </html>
