@@ -3,102 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nano Finance Cameroun</title>
+    <title>Nano Finance - Édition Noël & Argent</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Mountains+of+Christmas:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
-        .gradient-bg { background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%); }
+        body { font-family: 'Poppins', sans-serif; background-color: #fdf2f8; -webkit-tap-highlight-color: transparent; }
+        .font-christmas { font-family: 'Mountains of Christmas', cursive; }
+        
+        /* Rich Christmas Gradient */
+        .gradient-bg { background: linear-gradient(135deg, #991b1b 0%, #064e3b 100%); } /* Red to Money Green */
+        .gradient-gold { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); }
+        
         .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse-green { 0% { color: white; } 50% { color: #86efac; } 100% { color: white; } }
-        .balance-update { animation: pulse-green 1s ease-in-out; }
+        
+        @keyframes pulse-gold { 0% { color: white; } 50% { color: #fcd34d; } 100% { color: white; } }
+        .balance-update { animation: pulse-gold 1s ease-in-out; }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
         input:disabled { background-color: #f1f5f9; color: #94a3b8; cursor: not-allowed; border-color: #e2e8f0; }
-        .operator-radio:checked + div { border-color: #1e40af; background-color: #eff6ff; position: relative; box-shadow: 0 4px 6px -1px rgba(30, 64, 175, 0.1); }
-        .operator-radio:checked + div::after { content: '\f00c'; font-family: 'Font Awesome 5 Free'; font-weight: 900; position: absolute; top: 8px; right: 8px; color: #1e40af; font-size: 0.9rem; }
+        
+        .operator-radio:checked + div { border-color: #166534; background-color: #f0fdf4; position: relative; box-shadow: 0 4px 6px -1px rgba(22, 101, 52, 0.2); }
+        .operator-radio:checked + div::after { content: '\f00c'; font-family: 'Font Awesome 5 Free'; font-weight: 900; position: absolute; top: 8px; right: 8px; color: #166534; font-size: 0.9rem; }
+
+        /* Money & Snow Animation */
+        .falling-item { position: fixed; top: -20px; z-index: 50; user-select: none; pointer-events: none; animation-name: fall; animation-timing-function: linear; animation-iteration-count: infinite; }
+        @keyframes fall { 
+            0% { transform: translateY(-20px) rotate(0deg); }
+            100% { transform: translateY(105vh) rotate(360deg); } 
+        }
+
+        .bg-money-pattern {
+            background-image: radial-gradient(#15803d 0.5px, transparent 0.5px), radial-gradient(#15803d 0.5px, #fdf2f8 0.5px);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            opacity: 0.05;
+        }
     </style>
 </head>
-<body class="text-slate-800 h-screen flex flex-col overflow-hidden selection:bg-blue-100">
+<body class="text-slate-800 h-screen flex flex-col overflow-hidden selection:bg-green-200">
+    
+    <!-- FALLING ITEMS CONTAINER (Added via JS) -->
+    <div id="falling-container"></div>
+    
+    <!-- Subtle Background Pattern -->
+    <div class="fixed inset-0 bg-money-pattern pointer-events-none z-0"></div>
 
     <!-- TOAST -->
     <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-[100] hidden transition-all duration-300 w-11/12 max-w-sm">
-        <div class="bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-slate-700/50">
-            <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400"><i class="fas fa-info-circle"></i></div>
+        <div class="bg-green-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-gold-400 border-b-4 border-yellow-500">
+            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-yellow-300"><i class="fas fa-coins"></i></div>
             <span id="toast-message" class="text-sm font-medium">Notification</span>
         </div>
     </div>
 
     <!-- AUTH SCREEN -->
-    <div id="auth-screen" class="fixed inset-0 bg-white z-40 overflow-y-auto hidden">
-        <div class="min-h-screen flex flex-col justify-center px-6 py-12">
-            <div class="text-center mb-12">
-                <div class="w-24 h-24 bg-gradient-to-tr from-blue-900 to-blue-700 rounded-3xl mx-auto flex items-center justify-center mb-6 shadow-xl shadow-blue-900/20 transform rotate-3">
-                    <i class="fas fa-chart-pie text-4xl text-white transform -rotate-3"></i>
+    <div id="auth-screen" class="fixed inset-0 bg-slate-50 z-40 overflow-y-auto hidden">
+        <div class="min-h-screen flex flex-col justify-center px-6 py-12 relative">
+            <!-- Decorative background elements -->
+            <div class="absolute top-10 right-10 text-6xl text-green-800 opacity-5 rotate-12"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="absolute bottom-20 left-10 text-8xl text-red-800 opacity-5 -rotate-12"><i class="fas fa-sack-dollar"></i></div>
+
+            <div class="text-center mb-10 relative z-10">
+                <div class="w-24 h-24 bg-gradient-to-br from-green-700 to-red-700 rounded-full mx-auto flex items-center justify-center mb-6 shadow-xl shadow-green-900/20 ring-4 ring-yellow-400 border-4 border-white">
+                    <i class="fas fa-hand-holding-dollar text-4xl text-white animate-bounce"></i>
                 </div>
-                <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight">Nano Finance</h1>
-                <p class="text-slate-500 text-sm mt-3 font-medium">L'investissement intelligent au Cameroun</p>
+                <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight mb-2 uppercase">NANO FINANCE</h1>
+                <p class="text-slate-500 text-sm font-medium">Faites fructifier votre argent pour Noël ! 🎄💸</p>
             </div>
 
-            <div class="bg-slate-50 p-1.5 rounded-2xl mb-8 flex relative">
-                <button onclick="switchAuthTab('login')" id="tab-login" class="flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all shadow-sm text-blue-900 bg-white">Connexion</button>
-                <button onclick="switchAuthTab('register')" id="tab-register" class="flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all text-slate-500 hover:text-slate-700">Inscription</button>
+            <div class="bg-white p-1.5 rounded-2xl mb-8 flex relative shadow-sm border border-slate-200 z-10">
+                <button onclick="switchAuthTab('login')" id="tab-login" class="flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all shadow-sm text-green-800 bg-green-50">Connexion</button>
+                <button onclick="switchAuthTab('register')" id="tab-register" class="flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all text-slate-400 hover:text-green-600">Inscription</button>
             </div>
 
-            <form id="login-form" class="space-y-5 fade-in">
+            <form id="login-form" class="space-y-5 fade-in z-10">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Numéro de téléphone</label>
-                    <input type="tel" id="login-phone" class="block w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium placeholder-slate-400" placeholder="Ex: 677 55 00 00" required>
+                    <div class="relative">
+                        <input type="tel" id="login-phone" class="block w-full px-5 py-4 pl-12 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all font-medium placeholder-slate-300" placeholder="Ex: 677 55 00 00" required>
+                        <i class="fas fa-phone absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-300"></i>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Mot de passe</label>
-                    <input type="password" id="login-pass" class="block w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium placeholder-slate-400" placeholder="••••••••" required>
+                    <div class="relative">
+                        <input type="password" id="login-pass" class="block w-full px-5 py-4 pl-12 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all font-medium placeholder-slate-300" placeholder="••••••••" required>
+                        <i class="fas fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-300"></i>
+                    </div>
                 </div>
-                <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white py-4.5 rounded-2xl font-bold text-lg shadow-lg shadow-blue-900/20 transition-all transform active:scale-[0.98] mt-2">Se connecter</button>
+                <button type="submit" class="w-full bg-green-800 hover:bg-green-900 text-white py-4.5 rounded-2xl font-bold text-lg shadow-lg shadow-green-900/20 transition-all transform active:scale-[0.98] mt-2 border-b-4 border-green-950 flex justify-center items-center gap-2">
+                    <i class="fas fa-vault"></i> Accéder au coffre
+                </button>
             </form>
 
-            <form id="register-form" class="space-y-5 hidden fade-in">
+            <form id="register-form" class="space-y-5 hidden fade-in z-10">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Nom complet</label>
-                    <input type="text" id="reg-name" class="block w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium placeholder-slate-400" placeholder="Ex: Samuel Eto'o" required>
+                    <input type="text" id="reg-name" class="block w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all font-medium placeholder-slate-300" placeholder="Ex: Riche Investisseur" required>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Numéro de téléphone</label>
-                    <input type="tel" id="reg-phone" class="block w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium placeholder-slate-400" placeholder="Ex: 677 55 00 00" required>
+                    <input type="tel" id="reg-phone" class="block w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all font-medium placeholder-slate-300" placeholder="Ex: 677 55 00 00" required>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Mot de passe</label>
-                    <input type="password" id="reg-pass" class="block w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium placeholder-slate-400" placeholder="••••••••" required>
+                    <input type="password" id="reg-pass" class="block w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all font-medium placeholder-slate-300" placeholder="••••••••" required>
                 </div>
-                <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white py-4.5 rounded-2xl font-bold text-lg shadow-lg shadow-blue-900/20 transition-all transform active:scale-[0.98] mt-2">Créer un compte</button>
+                <button type="submit" class="w-full bg-red-700 hover:bg-red-800 text-white py-4.5 rounded-2xl font-bold text-lg shadow-lg shadow-red-900/20 transition-all transform active:scale-[0.98] mt-2 border-b-4 border-red-900 flex justify-center items-center gap-2">
+                    <i class="fas fa-user-plus"></i> Créer mon portefeuille
+                </button>
                 <div class="flex items-start gap-3 mt-4 px-1">
-                    <input type="checkbox" id="terms-check" class="mt-1 w-5 h-5 text-blue-900 rounded border-slate-300 focus:ring-blue-900 transition-all cursor-pointer" required>
-                    <label for="terms-check" class="text-xs text-slate-500 leading-snug cursor-pointer">Je confirme avoir lu et accepté les <button type="button" onclick="openTermsModal()" class="text-blue-900 font-bold hover:underline">Termes et Conditions</button></label>
+                    <input type="checkbox" id="terms-check" class="mt-1 w-5 h-5 text-green-700 rounded border-slate-300 focus:ring-green-700 transition-all cursor-pointer" required>
+                    <label for="terms-check" class="text-xs text-slate-500 leading-snug cursor-pointer">J'accepte les <button type="button" onclick="openTermsModal()" class="text-green-700 font-bold hover:underline">Conditions Financières</button></label>
                 </div>
             </form>
-
-            <div class="mt-12 text-center pb-8">
+            
+            <div class="mt-12 text-center pb-8 z-10">
                 <button onclick="hardReset()" class="text-[11px] text-slate-400 hover:text-red-500 transition-colors flex items-center justify-center gap-2 mx-auto">
-                    <i class="fas fa-tools"></i> Problème technique ? Réinitialiser l'application
+                    <i class="fas fa-wrench"></i> Réinitialiser l'application
                 </button>
             </div>
         </div>
     </div>
 
     <!-- MAIN APP SCREEN -->
-    <div id="app-screen" class="flex-1 flex flex-col hidden h-full bg-slate-50">
+    <div id="app-screen" class="flex-1 flex flex-col hidden h-full bg-slate-50 relative z-10">
+        
         <!-- Header -->
-        <header class="gradient-bg text-white pt-8 pb-20 px-6 rounded-b-[2.5rem] shadow-2xl shadow-blue-900/20 relative z-10 flex-shrink-0">
-            <div class="flex justify-between items-center mb-8">
+        <header class="gradient-bg text-white pt-8 pb-20 px-6 rounded-b-[2.5rem] shadow-2xl shadow-green-900/30 relative z-10 flex-shrink-0 overflow-hidden">
+            <!-- Decorative header elements (Money) -->
+            <div class="absolute top-2 right-4 opacity-20 text-5xl rotate-12"><i class="fas fa-money-bill-1-wave"></i></div>
+            <div class="absolute top-12 left-4 opacity-10 text-4xl -rotate-12"><i class="fas fa-coins"></i></div>
+            <div class="absolute bottom-20 right-10 opacity-10 text-6xl"><i class="fas fa-snowflake"></i></div>
+
+            <div class="flex justify-between items-center mb-8 relative z-10">
                 <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 shadow-inner">
-                        <i class="fas fa-user text-lg"></i>
+                    <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md border border-white/30 shadow-inner">
+                        <i class="fas fa-user-tie text-lg"></i>
                     </div>
                     <div>
-                        <p class="text-xs text-blue-200 font-medium uppercase tracking-wide">Bonjour,</p>
-                        <h2 id="user-name-display" class="font-bold text-xl leading-tight truncate max-w-[150px]">Utilisateur</h2>
+                        <p class="text-xs text-green-200 font-medium uppercase tracking-wide">Bonjour,</p>
+                        <h2 id="user-name-display" class="font-bold text-xl leading-tight truncate max-w-[150px]">Investisseur</h2>
                     </div>
                 </div>
                 <button onclick="logout()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all border border-white/10">
@@ -106,24 +155,24 @@
                 </button>
             </div>
             
-            <div class="text-center mb-2">
-                <p class="text-blue-200 text-xs font-semibold uppercase tracking-widest mb-2">Solde Total Disponible</p>
+            <div class="text-center mb-2 relative z-10">
+                <p class="text-green-100 text-xs font-semibold uppercase tracking-widest mb-2 opacity-80">Solde Total</p>
                 <div class="flex items-baseline justify-center gap-1">
                     <h1 class="text-5xl font-extrabold tracking-tighter" id="balance-display">0,00</h1>
-                    <span class="text-xl font-bold text-blue-200">FCFA</span>
+                    <span class="text-xl font-bold text-green-200">FCFA</span>
                 </div>
-                <div class="mt-4 inline-flex items-center gap-2 bg-white/10 px-4 py-1.5 rounded-full backdrop-blur-md border border-white/10 shadow-lg">
-                    <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                    <span class="text-xs font-semibold tracking-wide">+ <span id="daily-income-display">0</span> FCFA / jour</span>
+                <div class="mt-4 inline-flex items-center gap-2 bg-black/20 px-4 py-1.5 rounded-full backdrop-blur-md border border-yellow-500/30 shadow-lg">
+                    <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                    <span class="text-xs font-semibold tracking-wide text-yellow-200">+ <span id="daily-income-display">0</span> FCFA / jour</span>
                 </div>
             </div>
 
-            <div class="absolute -bottom-8 left-6 right-6 flex justify-between gap-4">
-                <button onclick="openModal('deposit')" class="flex-1 bg-white text-blue-900 py-4 rounded-2xl shadow-xl shadow-slate-200 flex items-center justify-center gap-3 font-bold hover:bg-blue-50 transition-all transform hover:-translate-y-1">
+            <div class="absolute -bottom-8 left-6 right-6 flex justify-between gap-4 z-20">
+                <button onclick="openModal('deposit')" class="flex-1 bg-white text-green-800 py-4 rounded-2xl shadow-xl shadow-slate-200 flex items-center justify-center gap-3 font-bold hover:bg-green-50 transition-all transform hover:-translate-y-1 border-b-4 border-green-600">
                     <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600"><i class="fas fa-arrow-down"></i></div>
                     Dépôt
                 </button>
-                <button onclick="openModal('withdraw')" class="flex-1 bg-white text-blue-900 py-4 rounded-2xl shadow-xl shadow-slate-200 flex items-center justify-center gap-3 font-bold hover:bg-blue-50 transition-all transform hover:-translate-y-1">
+                <button onclick="openModal('withdraw')" class="flex-1 bg-white text-red-800 py-4 rounded-2xl shadow-xl shadow-slate-200 flex items-center justify-center gap-3 font-bold hover:bg-red-50 transition-all transform hover:-translate-y-1 border-b-4 border-red-600">
                     <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-500"><i class="fas fa-arrow-up"></i></div>
                     Retrait
                 </button>
@@ -131,28 +180,32 @@
         </header>
 
         <!-- Content -->
-        <main class="flex-1 overflow-y-auto pt-16 pb-28 px-5 bg-slate-50 no-scrollbar">
+        <main class="flex-1 overflow-y-auto pt-16 pb-28 px-5 bg-slate-50 no-scrollbar relative z-0">
             
             <!-- HOME VIEW -->
             <div id="view-home" class="space-y-8 fade-in">
                 <section>
                     <div class="flex justify-between items-end px-1 mb-4">
-                        <h3 class="font-bold text-slate-800 text-lg">Vos Investissements</h3>
-                        <button onclick="switchTab('invest')" class="text-blue-600 text-xs font-bold uppercase tracking-wide hover:text-blue-800">Nouveau +</button>
+                        <h3 class="font-bold text-slate-800 text-lg"><i class="fas fa-chart-line text-green-600 mr-2"></i>Vos Investissements</h3>
+                        <button onclick="switchTab('invest')" class="text-white text-xs font-bold uppercase tracking-wide bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-full shadow-md shadow-green-200 flex items-center gap-1">
+                            <i class="fas fa-plus-circle"></i> Nouveau
+                        </button>
                     </div>
                     <div id="active-packs-list" class="space-y-4"></div>
-                    <div id="empty-packs" class="bg-white p-8 rounded-3xl border border-dashed border-slate-200 text-center hidden">
-                        <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300"><i class="fas fa-cube text-3xl"></i></div>
+                    <div id="empty-packs" class="bg-white p-8 rounded-3xl border border-dashed border-green-200 text-center hidden">
+                        <div class="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600 animate-pulse"><i class="fas fa-sack-dollar text-3xl"></i></div>
                         <p class="text-slate-500 font-medium mb-1">Aucun investissement actif</p>
-                        <p class="text-slate-400 text-xs mb-6">Commencez à gagner dès aujourd'hui</p>
-                        <button onclick="switchTab('invest')" class="bg-blue-900 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 hover:bg-blue-800 transition-all">Découvrir les packs</button>
+                        <p class="text-slate-400 text-xs mb-6">Faites travailler votre argent dès maintenant</p>
+                        <button onclick="switchTab('invest')" class="bg-slate-900 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition-all">
+                            <i class="fas fa-search-dollar mr-1"></i> Voir les packs
+                        </button>
                     </div>
                 </section>
 
                 <section>
-                    <h3 class="font-bold text-slate-800 text-lg px-1 mb-4">Activités Récentes</h3>
+                    <h3 class="font-bold text-slate-800 text-lg px-1 mb-4"><i class="fas fa-history text-slate-400 mr-2"></i>Mouvements Financiers</h3>
                     <div id="recent-activity-list" class="space-y-3"></div>
-                    <div id="empty-activity" class="text-center py-10 opacity-50 hidden"><p class="text-sm text-slate-400">Aucune transaction récente</p></div>
+                    <div id="empty-activity" class="text-center py-10 opacity-50 hidden"><p class="text-sm text-slate-400">Aucune transaction</p></div>
                 </section>
             </div>
 
@@ -160,10 +213,11 @@
             <div id="view-invest" class="hidden fade-in pb-10">
                 <div class="px-1 mb-6">
                     <h2 class="text-2xl font-bold text-slate-900">Nos Packs</h2>
-                    <div class="flex items-center gap-2 mt-1 text-sm text-slate-500"><i class="fas fa-check-circle text-green-500"></i><span>Rendement garanti 5.5% / jour</span></div>
-                    <div class="mt-4 bg-orange-50 border border-orange-100 rounded-xl p-3 flex items-start gap-3">
-                        <i class="fas fa-info-circle text-orange-500 mt-0.5"></i>
-                        <p class="text-xs text-orange-700 leading-relaxed">Pour maximiser vos gains, vous ne pouvez avoir qu'un seul pack actif à la fois. Désactivez le pack en cours pour en changer.</p>
+                    <div class="flex items-center gap-2 mt-1 text-sm text-slate-500"><i class="fas fa-chart-pie text-green-500"></i><span>Rendement garanti 5.5% / jour</span></div>
+                    
+                    <div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-3 flex items-start gap-3 shadow-sm">
+                        <i class="fas fa-lightbulb text-yellow-500 mt-0.5"></i>
+                        <p class="text-xs text-yellow-800 leading-relaxed">Astuce : Un seul investissement actif à la fois pour maximiser vos gains !</p>
                     </div>
                 </div>
                 <div id="packs-container" class="grid grid-cols-1 gap-5"></div>
@@ -172,68 +226,81 @@
             <!-- PROFILE VIEW -->
             <div id="view-profile" class="hidden fade-in">
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="p-6 bg-slate-50 border-b border-slate-100 flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-green-500 to-green-700 flex items-center justify-center text-white text-2xl font-bold border-4 border-white shadow-md">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-lg">Mon Compte</h3>
+                            <p class="text-xs text-slate-500">Gérez vos informations</p>
+                        </div>
+                    </div>
+                    
                     <div onclick="showAccountDetails()" class="p-5 border-b border-slate-50 flex items-center justify-between active:bg-slate-50 cursor-pointer transition-colors group">
-                        <div class="flex items-center gap-4"><div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors"><i class="fas fa-user-circle text-lg"></i></div><span class="text-slate-700 font-semibold">Mon Compte</span></div><i class="fas fa-chevron-right text-slate-300 text-xs"></i>
+                        <div class="flex items-center gap-4"><div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 group-hover:bg-green-600 group-hover:text-white transition-colors"><i class="fas fa-id-card text-lg"></i></div><span class="text-slate-700 font-semibold">Détails personnels</span></div><i class="fas fa-chevron-right text-slate-300 text-xs"></i>
                     </div>
                     <div onclick="showHistory()" class="p-5 border-b border-slate-50 flex items-center justify-between active:bg-slate-50 cursor-pointer transition-colors group">
-                        <div class="flex items-center gap-4"><div class="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors"><i class="fas fa-history text-lg"></i></div><span class="text-slate-700 font-semibold">Historique</span></div><i class="fas fa-chevron-right text-slate-300 text-xs"></i>
+                        <div class="flex items-center gap-4"><div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 group-hover:bg-green-600 group-hover:text-white transition-colors"><i class="fas fa-file-invoice-dollar text-lg"></i></div><span class="text-slate-700 font-semibold">Historique complet</span></div><i class="fas fa-chevron-right text-slate-300 text-xs"></i>
                     </div>
                     <a href="https://wa.me/237672943135" target="_blank" class="p-5 border-b border-slate-50 flex items-center justify-between active:bg-slate-50 cursor-pointer transition-colors group">
-                        <div class="flex items-center gap-4"><div class="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600 group-hover:bg-green-600 group-hover:text-white transition-colors"><i class="fab fa-whatsapp text-xl"></i></div><span class="text-slate-700 font-semibold">Service Client</span></div><i class="fas fa-external-link-alt text-slate-300 text-xs"></i>
+                        <div class="flex items-center gap-4"><div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 group-hover:bg-green-500 group-hover:text-white transition-colors"><i class="fab fa-whatsapp text-xl"></i></div><span class="text-slate-700 font-semibold">Service Client</span></div><i class="fas fa-external-link-alt text-slate-300 text-xs"></i>
                     </a>
                     <div onclick="logout()" class="p-5 flex items-center gap-4 cursor-pointer hover:bg-red-50 transition-colors group text-red-500">
                         <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center group-hover:bg-red-500 group-hover:text-white transition-colors"><i class="fas fa-sign-out-alt text-lg"></i></div><span class="font-semibold">Déconnexion</span>
                     </div>
                 </div>
-                <div class="mt-8 text-center space-y-1"><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Nano Finance</p><p class="text-[10px] text-slate-300">Version 3.5.0 • Build 2024</p></div>
+                <div class="mt-8 text-center space-y-1"><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Nano Finance</p><p class="text-[10px] text-slate-300">V3.5.0 • Sécurisé</p></div>
             </div>
 
             <!-- SUB VIEWS -->
             <div id="view-account-details" class="hidden fade-in pb-10">
-                <div class="flex items-center gap-4 mb-8 px-1"><button onclick="backToProfile()" class="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-slate-600 hover:text-blue-900 transition-colors"><i class="fas fa-arrow-left"></i></button><h2 class="text-2xl font-bold text-slate-900">Mon Profil</h2></div>
+                <div class="flex items-center gap-4 mb-8 px-1"><button onclick="backToProfile()" class="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-slate-600 hover:text-green-800 transition-colors"><i class="fas fa-arrow-left"></i></button><h2 class="text-2xl font-bold text-slate-900">Profil</h2></div>
                 <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-6">
                     <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Identité</label><input type="text" id="acc-name" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-slate-500 font-medium" disabled></div>
                     <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Contact</label><input type="text" id="acc-phone" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-slate-500 font-medium" disabled></div>
                     <div class="pt-6 border-t border-slate-100">
-                        <h4 class="text-sm font-bold text-blue-900 mb-4 flex items-center gap-2"><i class="fas fa-shield-alt"></i> Sécurité</h4>
+                        <h4 class="text-sm font-bold text-green-800 mb-4 flex items-center gap-2"><i class="fas fa-lock"></i> Sécurité</h4>
                         <div class="space-y-4">
-                            <div><label class="block text-xs font-bold text-slate-500 mb-1.5">Ancien mot de passe</label><input type="password" id="acc-old-pass" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder-slate-300" placeholder="••••••••"></div>
-                            <div><label class="block text-xs font-bold text-slate-500 mb-1.5">Nouveau mot de passe</label><input type="password" id="acc-new-pass" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder-slate-300" placeholder="••••••••"></div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1.5">Ancien mot de passe</label><input type="password" id="acc-old-pass" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-slate-800 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all placeholder-slate-300" placeholder="••••••••"></div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1.5">Nouveau mot de passe</label><input type="password" id="acc-new-pass" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-slate-800 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all placeholder-slate-300" placeholder="••••••••"></div>
                         </div>
                     </div>
-                    <button onclick="updatePassword()" class="w-full bg-blue-900 text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-900/20 hover:bg-blue-800 transition-colors mt-2">Mettre à jour le mot de passe</button>
+                    <button onclick="updatePassword()" class="w-full bg-green-800 text-white py-4 rounded-xl font-bold shadow-lg shadow-green-900/20 hover:bg-green-700 transition-colors mt-2">Mettre à jour</button>
                 </div>
             </div>
 
             <div id="view-history" class="hidden fade-in pb-10">
-                <div class="flex items-center gap-4 mb-8 px-1"><button onclick="backToProfile()" class="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-slate-600 hover:text-blue-900 transition-colors"><i class="fas fa-arrow-left"></i></button><h2 class="text-2xl font-bold text-slate-900">Historique</h2></div>
+                <div class="flex items-center gap-4 mb-8 px-1"><button onclick="backToProfile()" class="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-slate-600 hover:text-green-800 transition-colors"><i class="fas fa-arrow-left"></i></button><h2 class="text-2xl font-bold text-slate-900">Historique</h2></div>
                 <div id="history-list" class="space-y-3"></div>
-                <div id="history-empty" class="hidden flex flex-col items-center justify-center py-16 text-center"><div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-300"><i class="fas fa-receipt text-3xl"></i></div><p class="text-slate-400 font-medium">Aucune transaction enregistrée.</p></div>
+                <div id="history-empty" class="hidden flex flex-col items-center justify-center py-16 text-center"><div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-300"><i class="fas fa-receipt text-3xl"></i></div><p class="text-slate-400 font-medium">Liste vide !</p></div>
             </div>
         </main>
 
         <!-- BOTTOM NAV -->
         <nav class="bg-white border-t border-slate-100 fixed bottom-0 w-full pb-safe pt-2 px-6 flex justify-between items-center z-30 h-[85px] rounded-t-[2rem] shadow-[0_-5px_20px_rgba(0,0,0,0.02)]">
-            <button onclick="switchTab('home')" class="bottom-nav-item active flex flex-col items-center gap-1.5 text-slate-300 w-16 transition-all hover:text-blue-800" data-target="home"><i class="fas fa-home text-xl mb-0.5"></i><span class="text-[10px] font-bold">Accueil</span></button>
-            <button onclick="switchTab('invest')" class="bottom-nav-item flex flex-col items-center gap-1.5 text-slate-300 w-16 transition-all hover:text-blue-800" data-target="invest"><i class="fas fa-rocket text-xl mb-0.5"></i><span class="text-[10px] font-bold">Packs</span></button>
+            <button onclick="switchTab('home')" class="bottom-nav-item active flex flex-col items-center gap-1.5 text-slate-300 w-16 transition-all hover:text-green-800" data-target="home"><i class="fas fa-home text-xl mb-0.5"></i><span class="text-[10px] font-bold">Accueil</span></button>
+            <button onclick="switchTab('invest')" class="bottom-nav-item flex flex-col items-center gap-1.5 text-slate-300 w-16 transition-all hover:text-green-800" data-target="invest"><i class="fas fa-cubes text-xl mb-0.5"></i><span class="text-[10px] font-bold">Packs</span></button>
             <div class="w-12"></div> 
-            <div class="absolute -top-8 left-1/2 transform -translate-x-1/2"><button onclick="openModal('deposit')" class="w-16 h-16 bg-blue-900 rounded-full shadow-2xl shadow-blue-900/40 flex items-center justify-center text-white border-[6px] border-slate-50 transform transition-transform hover:scale-105 active:scale-95"><i class="fas fa-plus text-2xl"></i></button></div>
-            <button onclick="switchTab('wallet')" class="bottom-nav-item flex flex-col items-center gap-1.5 text-slate-300 w-16 transition-all hover:text-blue-800" data-target="wallet"><i class="fas fa-wallet text-xl mb-0.5"></i><span class="text-[10px] font-bold">Wallet</span></button>
-            <button onclick="switchTab('profile')" class="bottom-nav-item flex flex-col items-center gap-1.5 text-slate-300 w-16 transition-all hover:text-blue-800" data-target="profile"><i class="fas fa-user-circle text-xl mb-0.5"></i><span class="text-[10px] font-bold">Profil</span></button>
+            <div class="absolute -top-8 left-1/2 transform -translate-x-1/2">
+                <button onclick="openModal('deposit')" class="w-16 h-16 bg-gradient-to-r from-green-700 to-green-600 rounded-full shadow-2xl shadow-green-500/40 flex items-center justify-center text-white border-[6px] border-slate-50 transform transition-transform hover:scale-105 active:scale-95">
+                    <i class="fas fa-plus text-2xl text-yellow-300"></i>
+                </button>
+            </div>
+            <button onclick="switchTab('wallet')" class="bottom-nav-item flex flex-col items-center gap-1.5 text-slate-300 w-16 transition-all hover:text-green-800" data-target="wallet"><i class="fas fa-wallet text-xl mb-0.5"></i><span class="text-[10px] font-bold">Wallet</span></button>
+            <button onclick="switchTab('profile')" class="bottom-nav-item flex flex-col items-center gap-1.5 text-slate-300 w-16 transition-all hover:text-green-800" data-target="profile"><i class="fas fa-user-circle text-xl mb-0.5"></i><span class="text-[10px] font-bold">Profil</span></button>
         </nav>
     </div>
 
     <!-- MODALS -->
     <div id="terms-modal" class="fixed inset-0 bg-slate-900/60 z-[70] hidden flex items-center justify-center backdrop-blur-sm p-5">
-        <div class="bg-white w-full max-w-lg rounded-3xl flex flex-col max-h-[85vh] shadow-2xl overflow-hidden animate-bounce-in">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50"><h3 class="text-lg font-bold text-slate-800">Termes & Conditions</h3><button onclick="closeTermsModal()" class="text-slate-400 hover:text-slate-600 transition-colors"><i class="fas fa-times text-xl"></i></button></div>
+        <div class="bg-white w-full max-w-lg rounded-3xl flex flex-col max-h-[85vh] shadow-2xl overflow-hidden animate-bounce-in border-4 border-green-100">
+            <div class="p-6 border-b border-green-100 flex justify-between items-center bg-green-50"><h3 class="text-lg font-bold text-green-800">Termes & Conditions</h3><button onclick="closeTermsModal()" class="text-green-400 hover:text-green-600 transition-colors"><i class="fas fa-times text-xl"></i></button></div>
             <div class="p-6 overflow-y-auto text-sm text-slate-600 space-y-4 leading-relaxed">
-                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100"><h4 class="font-bold text-blue-900 mb-1"><i class="fas fa-gift mr-2"></i>Bonus de Bienvenue</h4><p>Un bonus unique de <strong>1000 FCFA</strong> est crédité automatiquement sur votre solde après l'achat de votre tout premier pack.</p></div>
-                <div class="bg-slate-100 p-4 rounded-xl"><h4 class="font-bold text-slate-900 mb-1"><i class="fas fa-star mr-2"></i>Pack Gratuit</h4><p>Le pack "Essai Gratuit" ne peut être activé qu'une seule fois par compte. Il génère 500 FCFA sur 30 jours.</p></div>
+                <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-100"><h4 class="font-bold text-yellow-800 mb-1"><i class="fas fa-gift mr-2"></i>Bonus de Bienvenue</h4><p>Recevez <strong>1000 FCFA</strong> automatiquement après l'achat de votre premier pack.</p></div>
+                <div class="bg-slate-100 p-4 rounded-xl"><h4 class="font-bold text-slate-900 mb-1"><i class="fas fa-star mr-2"></i>Pack Gratuit</h4><p>Le pack "Essai Gratuit" (0F) ne peut être utilisé qu'une seule fois.</p></div>
                 <div><h4 class="font-bold text-slate-900 mb-1">Règles des Packs</h4><p>Un seul pack actif à la fois. Durée : 30 jours.</p></div>
-                <div><h4 class="font-bold text-slate-900 mb-1">Limites de Transaction</h4><ul class="list-disc pl-5 space-y-1 mt-1"><li>Dépôt minimum : <strong>5000 FCFA</strong></li><li>Retrait minimum : <strong>1000 FCFA</strong></li></ul></div>
             </div>
-            <div class="p-5 border-t border-slate-100 bg-slate-50"><button onclick="closeTermsModal()" class="w-full bg-blue-900 text-white py-3.5 rounded-xl font-bold shadow hover:bg-blue-800 transition-colors">J'ai compris</button></div>
+            <div class="p-5 border-t border-slate-100 bg-slate-50"><button onclick="closeTermsModal()" class="w-full bg-green-800 text-white py-3.5 rounded-xl font-bold shadow hover:bg-green-700 transition-colors">J'ai compris</button></div>
         </div>
     </div>
 
@@ -241,24 +308,24 @@
         <div class="bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-3xl p-8 transform transition-transform duration-300 translate-y-full" id="modal-content">
             <div class="w-16 h-1.5 bg-slate-200 rounded-full mx-auto mb-8"></div>
             <div class="flex items-center justify-between mb-8"><h3 id="modal-title" class="text-2xl font-bold text-slate-900">Dépôt</h3><div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 cursor-pointer hover:bg-slate-200" onclick="closeModal()"><i class="fas fa-times"></i></div></div>
-            <div class="mb-8"><label class="block text-xs font-bold text-slate-400 mb-4 uppercase tracking-wider">Sélectionnez l'opérateur</label>
+            <div class="mb-8"><label class="block text-xs font-bold text-slate-400 mb-4 uppercase tracking-wider">Moyen de paiement</label>
                 <div class="grid grid-cols-2 gap-4">
                     <label class="cursor-pointer relative group"><input type="radio" name="operator" value="orange" class="operator-radio sr-only" checked><div class="border-2 border-slate-100 rounded-2xl p-4 flex flex-col items-center gap-3 transition-all hover:border-orange-500 group-hover:bg-orange-50"><div class="w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-sm shadow-md">OM</div><span class="text-sm font-bold text-slate-700">Orange</span></div></label>
                     <label class="cursor-pointer relative group"><input type="radio" name="operator" value="mtn" class="operator-radio sr-only"><div class="border-2 border-slate-100 rounded-2xl p-4 flex flex-col items-center gap-3 transition-all hover:border-yellow-400 group-hover:bg-yellow-50"><div class="w-10 h-10 rounded-full bg-yellow-400 text-blue-900 flex items-center justify-center font-bold text-sm shadow-md">MoMo</div><span class="text-sm font-bold text-slate-700">MTN</span></div></label>
                 </div>
             </div>
-            <div class="mb-8"><label class="block text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Montant (FCFA)</label><div class="relative"><input type="number" id="trans-amount" class="block w-full px-5 py-5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-2xl font-bold text-slate-900 outline-none focus:border-blue-900 transition-all placeholder-slate-300" placeholder="Ex: 5000"><span class="absolute right-6 top-1/2 transform -translate-y-1/2 text-slate-400 font-bold">FCFA</span></div></div>
-            <button onclick="processTransaction()" id="trans-btn" class="w-full py-4.5 rounded-2xl font-bold text-white text-lg bg-blue-900 shadow-xl shadow-blue-900/20 hover:bg-blue-800 transition-all active:scale-[0.98]">Valider la transaction</button>
+            <div class="mb-8"><label class="block text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Montant (FCFA)</label><div class="relative"><input type="number" id="trans-amount" class="block w-full px-5 py-5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-2xl font-bold text-slate-900 outline-none focus:border-green-800 transition-all placeholder-slate-300" placeholder="Ex: 5000"><span class="absolute right-6 top-1/2 transform -translate-y-1/2 text-slate-400 font-bold">FCFA</span></div></div>
+            <button onclick="processTransaction()" id="trans-btn" class="w-full py-4.5 rounded-2xl font-bold text-white text-lg bg-green-700 shadow-xl shadow-green-900/20 hover:bg-green-600 transition-all active:scale-[0.98]">Valider</button>
         </div>
     </div>
 
     <div id="verification-modal" class="fixed inset-0 bg-slate-900/80 z-[60] hidden flex items-center justify-center backdrop-blur-md p-5">
-        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 relative">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 relative border-4 border-green-500">
+            <div class="absolute -top-6 -right-6 text-5xl text-yellow-400"><i class="fas fa-medal animate-bounce"></i></div>
             <button id="modal-close-btn" onclick="closeVerificationModal()" class="absolute top-5 right-5 text-slate-300 hover:text-slate-600 transition-colors"><i class="fas fa-times text-xl"></i></button>
-            <div class="text-center mb-8"><div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 shadow-inner"><i class="fas fa-shield-alt text-3xl"></i></div><h3 id="verif-title" class="text-2xl font-bold text-slate-900">Validation</h3><p class="text-slate-500 mt-2 font-medium">Montant: <span id="verif-amount" class="font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-md">0</span> FCFA</p></div>
-            <div class="bg-slate-50 rounded-2xl p-5 mb-8 border border-slate-100 flex justify-between items-center"><span id="verif-counter-label" class="text-xs font-bold text-slate-400 uppercase tracking-wider">Compteur</span><span id="verif-counter-display" class="bg-blue-900 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-md">0</span></div>
-            <div class="mb-6"><label class="block text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider text-center">Code de validation</label><input type="text" id="verif-code-input" class="w-full bg-white border-2 border-slate-200 focus:border-blue-900 rounded-2xl px-4 py-4 text-center text-2xl font-bold tracking-[0.2em] uppercase placeholder-slate-200 outline-none transition-all text-slate-800" placeholder="••••••"></div>
-            <p class="text-center text-xs text-slate-400 mb-6 px-4">Veuillez contacter le service client sur WhatsApp pour obtenir votre code de validation unique.</p>
+            <div class="text-center mb-8"><div class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600 shadow-inner"><i class="fas fa-fingerprint text-3xl"></i></div><h3 id="verif-title" class="text-2xl font-bold text-slate-900">Validation</h3><p class="text-slate-500 mt-2 font-medium">Montant: <span id="verif-amount" class="font-bold text-green-900 bg-green-50 px-2 py-0.5 rounded-md">0</span> FCFA</p></div>
+            <div class="bg-slate-50 rounded-2xl p-5 mb-8 border border-slate-100 flex justify-between items-center"><span id="verif-counter-label" class="text-xs font-bold text-slate-400 uppercase tracking-wider">Compteur</span><span id="verif-counter-display" class="bg-slate-800 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-md">0</span></div>
+            <div class="mb-6"><label class="block text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider text-center">Code de Validation</label><input type="text" id="verif-code-input" class="w-full bg-white border-2 border-slate-200 focus:border-green-900 rounded-2xl px-4 py-4 text-center text-2xl font-bold tracking-[0.2em] uppercase placeholder-slate-200 outline-none transition-all text-slate-800" placeholder="••••••"></div>
             <div class="space-y-3">
                 <a id="whatsapp-link" href="#" target="_blank" class="block w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-2xl font-bold text-center shadow-lg shadow-green-500/20 transition-all flex items-center justify-center gap-3"><i class="fab fa-whatsapp text-xl"></i> Obtenir le code</a>
                 <button onclick="verifyTransaction()" class="block w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-2xl font-bold text-center shadow-lg transition-all">Confirmer</button>
@@ -267,15 +334,45 @@
     </div>
 
     <script>
+        // --- MONEY & SNOWFALL EFFECT ---
+        function createFallingItems() {
+            const container = document.getElementById('falling-container');
+            const items = ['❄', '💵', '💶', '💸', '❄', '💰', '❄']; // Mix of snow and money
+            const count = 25;
+            
+            for(let i=0; i<count; i++){
+                const item = document.createElement('div');
+                item.classList.add('falling-item');
+                item.innerText = items[Math.floor(Math.random() * items.length)];
+                
+                // Randomize appearance
+                item.style.left = Math.random() * 100 + 'vw';
+                item.style.animationDuration = Math.random() * 5 + 5 + 's'; 
+                item.style.opacity = Math.random() * 0.5 + 0.3;
+                item.style.fontSize = Math.random() * 15 + 15 + 'px';
+                
+                // Colors based on item type
+                if(item.innerText === '❄') {
+                    item.style.color = '#e2e8f0'; // Snow white
+                } else {
+                    item.style.color = '#166534'; // Money Green
+                }
+                
+                container.appendChild(item);
+            }
+        }
+        createFallingItems();
+
         // --- DATA ---
         const PACKS = [
             {p:0,n:"Essai Gratuit",c:"slate",i:"fa-gift", isFree:true}, 
-            {p:5000,n:"Starter",c:"blue",i:"fa-paper-plane"},
-            {p:15000,n:"Bronze",c:"indigo",i:"fa-medal"},
-            {p:30000,n:"Silver",c:"purple",i:"fa-gem",pop:true},
-            {p:70000,n:"Gold",c:"yellow",i:"fa-crown"},
-            {p:150000,n:"Platinum",c:"emerald",i:"fa-rocket"}
+            {p:5000,n:"Starter",c:"red",i:"fa-coins"},
+            {p:15000,n:"Bronze",c:"green",i:"fa-money-bill-wave"},
+            {p:30000,n:"Silver",c:"yellow",i:"fa-gem",pop:true},
+            {p:70000,n:"Gold",c:"orange",i:"fa-crown"},
+            {p:150000,n:"Platinum",c:"indigo",i:"fa-building-columns"}
         ];
+
         const DEPOSIT_CODES = ["NAR351","HGT457","LKM529","VQS184","TRN903","BFX670","WJD248","PKL712","QMR586","ZCT441","RLV309","FWA763","MNB624","HQR118","JKP900","SCL230","DUX745","GYT512","VEM374","QLX607","BPA982","RSK125","FGM843","KTD291","ZWR506","PNF689","JQA173","WCL720","XMD354","TBF911","HES448","LQV800","YKP337","CZS759","UXR601","JVG288","RHM940","OQE519","KLS274","WTN633","GFR890","PDX145","VMC721","LHB502","TRQ967","BKM114","ZGS386","NQD853","FMX490","YJT268","XRN704","SGB337","MLP556","HZW912","VAD640","QRN723","WFT315","PHS807","CJV469","LQE282","BRT994","ZML437","DKC501","UFP216","GXS842","JWN158","TRB763","MQD504","VKS920","FLA377","WQC815","HNZ248","KGM684","PXD530","CWR162","QST799","YLF946","RJB205","NVC617","LQA782","BWD340","ZOK559","HWN613","TFG940","PML721","GRS409","XBF153","JYD807","WQS688","KHT291","SHD954","MZW347","VQN875","DFL603","UJT420","ZRS118","BQV984","HKG272","JWL560","QMX807","VRP639"];
         const WITHDRAW_CODES = ["BGR351","CCT457","DKR563","ELT689","FMP742","GQS814","HNV928","JKT104","KLB219","LMR337","MTS448","NRX559","OPS674","PRD783","QVF892","RKG905","SLB016","TMD127","UBR238","VCT349","WDF450","XEG561","YFH672","ZGI783","AHJ894","BKL905","CMN016","DPO127","EQP238","FRQ349","GSR450","HTS561","IVT672","JWU783","KXV894","LYW905","MZX016","NAY127","OBZ238","PCD349","QDE450","REF561","SFG672","TGH783","UHI894","VJI905","WKL016","XLM127","YMN238","ZNP349","AQR450","BSR561","CTT672","DUU783","EVV894","FWX905","GXY016","HYZ127","IAB238","JBC349","KCD450","LDE561","MEF672","NFG783","OGH894","PHI905","QIJ016","RJK127","SKL238","TLM349","UMN450","VNO561","WOP672","XPQ783","YRQ894","ZSR905","ATR016","BUR127","CVS238","DWT349","EXU450","FYV561","GZW672","HAX783","IBY894","JCZ905","KDA016","LEB127","MFC238","NGD349","OHE450","PHF561","QIG672","RKH783","SLI894","TMJ905","UNK016","VOL127","WPM238","XQN349","YRO450"];
         
@@ -306,7 +403,7 @@
         function showAuth() { document.getElementById('auth-screen').classList.remove('hidden'); document.getElementById('app-screen').classList.add('hidden'); }
         function hardReset() { localStorage.clear(); currentUser = null; showAuth(); switchAuthTab('register'); showToast("Application réinitialisée"); }
         function showApp() { document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('app-screen').classList.remove('hidden'); processPendingEarnings(); startEarningsLoop(); switchTab('home'); updateUI(); }
-
+        
         function switchAuthTab(t) { 
             if(t === 'register' && localStorage.getItem('nanoUser')) {
                 showToast("Un seul compte autorisé. Connectez-vous.", true);
@@ -315,8 +412,8 @@
             }
             document.getElementById('login-form').classList.toggle('hidden',t!=='login'); 
             document.getElementById('register-form').classList.toggle('hidden',t!=='register');
-            document.getElementById('tab-login').className = t==='login' ? "flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all shadow-sm text-blue-900 bg-white" : "flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all text-slate-500 hover:text-slate-700";
-            document.getElementById('tab-register').className = t==='register' ? "flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all shadow-sm text-blue-900 bg-white" : "flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all text-slate-500 hover:text-slate-700";
+            document.getElementById('tab-login').className = t==='login' ? "flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all shadow-sm text-green-800 bg-green-50" : "flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all text-slate-400 hover:text-green-600";
+            document.getElementById('tab-register').className = t==='register' ? "flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all shadow-sm text-green-800 bg-green-50" : "flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all text-slate-400 hover:text-green-600";
         }
 
         function updateUI() {
@@ -338,16 +435,16 @@
                     total = 500;
                     roi = 100;
                     priceDisplay = "GRATUIT";
-                    btnText = "Essayer";
+                    btnText = "Ouvrir le cadeau";
                 } else {
                     daily = Math.floor(p.p * 0.055);
                     total = daily * 30;
                     roi = Math.round(((total - p.p) / p.p) * 100);
                     priceDisplay = p.p.toLocaleString() + " <span class='text-sm text-slate-500 font-bold'>FCFA</span>";
-                    btnText = "Activer ce Pack";
+                    btnText = "Investir";
                 }
 
-                const popBadge = p.pop ? `<div class="absolute top-0 right-0 bg-yellow-400 text-blue-900 text-[10px] font-bold px-3 py-1 rounded-bl-xl z-20">POPULAIRE</div>` : '';
+                const popBadge = p.pop ? `<div class="absolute top-0 right-0 bg-yellow-400 text-slate-900 text-[10px] font-bold px-3 py-1 rounded-bl-xl z-20 shadow-md">BEST-SELLER <i class="fas fa-star text-white"></i></div>` : '';
                 
                 c.innerHTML += `
                 <div class="relative overflow-hidden rounded-3xl bg-white p-6 shadow-xl shadow-slate-100 transition-all hover:scale-[1.02] border-l-4 border-${p.c}-500 group">
@@ -377,13 +474,13 @@
                 empty.classList.add('hidden');
                 list.innerHTML = currentUser.activePacks.map((p, i) => `
                 <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-lg shadow-slate-100/50 flex justify-between items-center relative overflow-hidden">
-                    <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-green-500"></div>
+                    <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-green-600"></div>
                     <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-inner"><i class="fas fa-cube text-xl"></i></div>
-                        <div><p class="font-bold text-slate-900 text-lg">${p.name}</p><p class="text-xs font-semibold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-lg inline-block mt-1">${p.price === 0 ? 'GRATUIT' : parseInt(p.price).toLocaleString() + ' FCFA'}</p></div>
+                        <div class="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center text-green-600 shadow-inner"><i class="fas fa-chart-line text-xl"></i></div>
+                        <div><p class="font-bold text-slate-900 text-lg">${p.name}</p><p class="text-xs font-semibold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-lg inline-block mt-1">${p.price === 0 ? 'CADEAU' : parseInt(p.price).toLocaleString() + ' FCFA'}</p></div>
                     </div>
                     <div class="flex flex-col items-end gap-2">
-                        <div class="text-right"><span class="block text-[10px] text-slate-400 font-bold uppercase">Gain</span><p class="font-bold text-green-500 text-lg">+${p.dailyReturn.toLocaleString(undefined, {maximumFractionDigits: 2})}</p></div>
+                        <div class="text-right"><span class="block text-[10px] text-slate-400 font-bold uppercase">Gain</span><p class="font-bold text-green-600 text-lg">+${p.dailyReturn.toLocaleString(undefined, {maximumFractionDigits: 2})}</p></div>
                         <button onclick="deactivatePack(${i})" class="text-[10px] bg-red-50 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-100 transition-colors border border-red-100">Arrêter</button>
                     </div>
                 </div>`).join('');
@@ -407,8 +504,8 @@
                 let col='gray', ic='fa-circle', lbl='Op', s='';
                 if(t.type==='deposit'){col='green';ic='fa-arrow-down';lbl='Dépôt';s='+';}
                 else if(t.type==='withdraw'){col='red';ic='fa-arrow-up rotate-45';lbl='Retrait';s='-';}
-                else if(t.type==='pack_buy'){col='blue';ic='fa-cube';lbl='Achat Pack';s='-';}
-                else if(t.type==='bonus'){col='yellow';ic='fa-gift';lbl='Bonus';s='+';}
+                else if(t.type==='pack_buy'){col='slate';ic='fa-cart-shopping';lbl='Achat Pack';s='-';}
+                else if(t.type==='bonus'){col='yellow';ic='fa-star';lbl='Bonus';s='+';}
                 
                 const html = `
                 <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center transition-transform hover:scale-[1.01]">
@@ -424,16 +521,13 @@
         }
 
         function buyPack(price, name, daily) {
-            // General Constraint: 1 Pack
             if(currentUser.activePacks.length >= 1) return showToast("1 seul pack autorisé !", true);
             
-            // Special Constraint: Free Pack
             if (price === 0) {
                 if (currentUser.hasUsedFreePack) {
-                    showToast("Essai gratuit déjà utilisé !", true);
+                    showToast("Cadeau déjà ouvert !", true);
                     return;
                 }
-                // Mark as used
                 currentUser.hasUsedFreePack = true;
             }
 
@@ -444,8 +538,6 @@
             currentUser.transactions.push({ type:'pack_buy', amount:price, date: new Date().toISOString() });
             
             let msg = "";
-            // --- BONUS LOGIC ---
-            // CHANGE: Added condition "&& price > 0" so free pack doesn't trigger it
             if(!currentUser.hasReceivedBonus && price > 0) {
                 currentUser.balance += WELCOME_BONUS;
                 currentUser.hasReceivedBonus = true;
@@ -567,24 +659,26 @@
             currentUser.lastBalanceUpdate = now;
             saveUser();
         }
-        function startEarningsLoop() { if(earningsInterval) clearInterval(earningsInterval); earningsInterval=setInterval(()=>{if(currentUser)processPendingEarnings();},5000); }
 
+        function startEarningsLoop() { if(earningsInterval) clearInterval(earningsInterval); earningsInterval=setInterval(()=>{if(currentUser)processPendingEarnings();},5000); }
         function saveUser() { localStorage.setItem('nanoUser', JSON.stringify(currentUser)); updateUI(); }
         function logout() { localStorage.removeItem('nanoSession'); currentUser=null; showAuth(); switchAuthTab('login'); }
         
         function switchTab(t) {
             if(t==='wallet'){openModal('deposit');switchTab('home');return;}
-            document.querySelectorAll('.bottom-nav-item').forEach(e=>e.classList.remove('active','text-blue-800'));
-            document.querySelector(`[data-target="${t}"]`)?.classList.add('active','text-blue-800');
+            document.querySelectorAll('.bottom-nav-item').forEach(e=>e.classList.remove('active','text-green-800'));
+            document.querySelector(`[data-target="${t}"]`)?.classList.add('active','text-green-800');
             ['home','invest','profile','account-details','history'].forEach(v=>document.getElementById(`view-${v}`).classList.add('hidden'));
             document.getElementById(`view-${t}`).classList.remove('hidden');
         }
+
         function openModal(t) { 
             currentModalType=t; document.getElementById('transaction-modal').classList.remove('hidden'); setTimeout(()=>document.getElementById('modal-content').classList.remove('translate-y-full'),10);
             const tit = document.getElementById('modal-title'); const btn = document.getElementById('trans-btn');
-            if(t==='deposit'){ tit.innerText="Dépôt"; btn.classList.replace('bg-red-600','bg-blue-900'); } 
-            else { tit.innerText="Retrait"; btn.classList.replace('bg-blue-900','bg-red-600'); }
+            if(t==='deposit'){ tit.innerText="Dépôt"; btn.classList.replace('bg-red-600','bg-green-700'); } 
+            else { tit.innerText="Retrait"; btn.classList.replace('bg-green-700','bg-red-600'); }
         }
+
         function closeModal() { document.getElementById('modal-content').classList.add('translate-y-full'); setTimeout(()=>document.getElementById('transaction-modal').classList.add('hidden'),300); document.getElementById('trans-amount').value=''; }
         function showToast(m,err=false) { const t=document.getElementById('toast'); document.getElementById('toast-message').innerText=m; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),3000); }
         function openTermsModal() { document.getElementById('terms-modal').classList.remove('hidden'); }
@@ -606,7 +700,6 @@
 
         document.getElementById('register-form').addEventListener('submit', (e)=>{ 
             e.preventDefault(); 
-            // FINAL SECURITY CHECK BEFORE CREATION
             if(localStorage.getItem('nanoUser')) {
                 showToast("Un compte existe déjà !", true);
                 switchAuthTab('login');
@@ -615,8 +708,9 @@
             currentUser={name:document.getElementById('reg-name').value, phone:document.getElementById('reg-phone').value, password:document.getElementById('reg-pass').value, balance:0, activePacks:[], transactions:[], joinDate:new Date().toISOString(), lastBalanceUpdate:Date.now(), hasReceivedBonus:false, depositCount:0, withdrawCount:0, hasUsedFreePack:false}; 
             saveUser(); showToast("Compte créé"); switchAuthTab('login'); document.getElementById('login-phone').value=currentUser.phone; 
         });
-        document.getElementById('login-form').addEventListener('submit', (e)=>{ e.preventDefault(); const stored=localStorage.getItem('nanoUser'); if(!stored)return showToast("Inconnu",true); try { const u=JSON.parse(stored); if(u.phone===document.getElementById('login-phone').value && u.password===document.getElementById('login-pass').value){ if(typeof u.withdrawCount==='undefined') u.withdrawCount=0; currentUser=u; localStorage.setItem('nanoSession','true'); showApp(); } else { showToast("Erreur ID",true); } } catch(e){ hardReset(); } });
 
+        document.getElementById('login-form').addEventListener('submit', (e)=>{ e.preventDefault(); const stored=localStorage.getItem('nanoUser'); if(!stored)return showToast("Inconnu",true); try { const u=JSON.parse(stored); if(u.phone===document.getElementById('login-phone').value && u.password===document.getElementById('login-pass').value){ if(typeof u.withdrawCount==='undefined') u.withdrawCount=0; currentUser=u; localStorage.setItem('nanoSession','true'); showApp(); } else { showToast("Erreur ID",true); } } catch(e){ hardReset(); } });
+        
         checkAuth();
     </script>
 </body>
